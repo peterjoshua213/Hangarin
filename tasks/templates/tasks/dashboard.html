@@ -1,0 +1,118 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}Dashboard - Hangarin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="mb-2" style="color: white;">📊 Dashboard</h1>
+        <p style="color: rgba(255, 255, 255, 0.8);">Welcome back! Here's your task overview.</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <h3>{{ total_tasks }}</h3>
+            <p>Total Tasks</p>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <h3 style="color: #ed8936;">{{ pending_tasks }}</h3>
+            <p>Pending</p>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <h3 style="color: #4299e1;">{{ in_progress_tasks }}</h3>
+            <p>In Progress</p>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <h3 style="color: #48bb78;">{{ completed_tasks }}</h3>
+            <p>Completed</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Tasks Section -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">📋 Recent Tasks</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_tasks %}
+            <div class="row">
+                {% for task in recent_tasks %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="task-item">
+                            <div class="task-title">{{ task.title }}</div>
+                            <div class="task-description">
+                                {% if task.description %}
+                                    {{ task.description|truncatewords:15 }}
+                                {% else %}
+                                    <em>No description provided</em>
+                                {% endif %}
+                            </div>
+                            <div class="task-meta">
+                                <span>
+                                    {% if task.status == 'Pending' %}
+                                        <span class="badge badge-pending">{{ task.status }}</span>
+                                    {% elif task.status == 'In Progress' %}
+                                        <span class="badge badge-in-progress">{{ task.status }}</span>
+                                    {% else %}
+                                        <span class="badge badge-completed">{{ task.status }}</span>
+                                    {% endif %}
+                                </span>
+                                {% if task.priority %}
+                                    <span>
+                                        {% if task.priority.name == 'High' %}
+                                            <span class="badge badge-high">{{ task.priority.name }}</span>
+                                        {% elif task.priority.name == 'Medium' %}
+                                            <span class="badge badge-medium">{{ task.priority.name }}</span>
+                                        {% else %}
+                                            <span class="badge badge-low">{{ task.priority.name }}</span>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                                {% if task.category %}
+                                    <span><strong>📁</strong> {{ task.category.name }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="mt-3">
+                                <a href="/tasks/{{ task.id }}/" class="btn btn-sm btn-primary">View</a>
+                                <a href="/tasks/{{ task.id }}/edit/" class="btn btn-sm btn-warning">Edit</a>
+                                <a href="/tasks/{{ task.id }}/delete/" class="btn btn-sm btn-danger">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <strong>No tasks yet!</strong> Create your first task to get started.
+            </div>
+            <a href="/tasks/create/" class="btn btn-primary">Create First Task</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">⚡ Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="/tasks/" class="btn btn-primary me-2">View All Tasks</a>
+                <a href="/tasks/create/" class="btn btn-success">Create New Task</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

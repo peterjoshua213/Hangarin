@@ -1,0 +1,145 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}Create Task - Hangarin{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb" style="background: transparent;">
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/tasks/">Tasks</a></li>
+        <li class="breadcrumb-item active" style="color: white;">Create New Task</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">✨ Create New Task</h2>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Error:</strong> {{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Title Field -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Task Title <span class="text-danger">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="title" 
+                            name="title" 
+                            placeholder="Enter task title"
+                            required
+                        >
+                        <small class="form-text text-muted">Give your task a clear, descriptive title.</small>
+                    </div>
+
+                    <!-- Description Field -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea 
+                            class="form-control" 
+                            id="description" 
+                            name="description" 
+                            rows="4"
+                            placeholder="Enter detailed description (optional)"
+                        ></textarea>
+                        <small class="form-text text-muted">Provide more context about the task.</small>
+                    </div>
+
+                    <!-- Status Field -->
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Pending" selected>Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <!-- Priority and Category Row -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Priority Field -->
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">🎯 Priority</label>
+                                <select class="form-select" id="priority" name="priority_id">
+                                    <option value="">Not Set</option>
+                                    {% for priority in priorities %}
+                                        <option value="{{ priority.id }}">
+                                            {% if priority.name == 'High' %}🔴{% elif priority.name == 'Medium' %}🟡{% else %}🟢{% endif %}
+                                            {{ priority.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Set task priority level.</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <!-- Category Field -->
+                            <div class="mb-3">
+                                <label for="category" class="form-label">📁 Category</label>
+                                <select class="form-select" id="category" name="category_id">
+                                    <option value="">Not Set</option>
+                                    {% if categories %}
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option disabled>No categories available</option>
+                                    {% endif %}
+                                </select>
+                                <small class="form-text text-muted">Organize tasks by category.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deadline Field -->
+                    <div class="mb-3">
+                        <label for="deadline" class="form-label">Deadline</label>
+                        <input 
+                            type="datetime-local" 
+                            class="form-control" 
+                            id="deadline" 
+                            name="deadline"
+                        >
+                        <small class="form-text text-muted">Set a deadline for completing this task.</small>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                            ✅ Create Task
+                        </button>
+                        <a href="/tasks/" class="btn btn-outline-secondary btn-lg">
+                            ← Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="alert alert-info mt-4">
+            <h5>💡 Tips for creating tasks:</h5>
+            <ul class="mb-0">
+                <li>Use clear and concise titles</li>
+                <li>Add descriptions for complex tasks</li>
+                <li>Set appropriate priority levels</li>
+                <li>Assign deadlines to stay organized</li>
+                <li>Use categories to group related tasks</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

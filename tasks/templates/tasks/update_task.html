@@ -1,0 +1,148 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}Edit {{ task.title }} - Hangarin{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb" style="background: transparent;">
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/tasks/">Tasks</a></li>
+        <li class="breadcrumb-item"><a href="/tasks/{{ task.id }}/">{{ task.title }}</a></li>
+        <li class="breadcrumb-item active" style="color: white;">Edit</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">✏️ Edit Task: {{ task.title }}</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Title Field -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Task Title <span class="text-danger">*</span></label>
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            id="title" 
+                            name="title" 
+                            value="{{ task.title }}"
+                            placeholder="Enter task title"
+                            required
+                        >
+                        <small class="form-text text-muted">Give your task a clear, descriptive title.</small>
+                    </div>
+
+                    <!-- Description Field -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea 
+                            class="form-control" 
+                            id="description" 
+                            name="description" 
+                            rows="4"
+                            placeholder="Enter detailed description (optional)"
+                        >{{ task.description }}</textarea>
+                        <small class="form-text text-muted">Provide more context about the task.</small>
+                    </div>
+
+                    <!-- Status Field -->
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Pending" {% if task.status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="In Progress" {% if task.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                            <option value="Completed" {% if task.status == 'Completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </div>
+
+                    <!-- Priority and Category Row -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Priority Field -->
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">🎯 Priority</label>
+                                <select class="form-select" id="priority" name="priority_id">
+                                    <option value="">Not Set</option>
+                                    {% for priority in priorities %}
+                                        <option value="{{ priority.id }}" {% if task.priority and task.priority.id == priority.id %}selected{% endif %}>
+                                            {% if priority.name == 'High' %}🔴{% elif priority.name == 'Medium' %}🟡{% else %}🟢{% endif %}
+                                            {{ priority.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Set task priority level.</small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <!-- Category Field -->
+                            <div class="mb-3">
+                                <label for="category" class="form-label">📁 Category</label>
+                                <select class="form-select" id="category" name="category_id">
+                                    <option value="">Not Set</option>
+                                    {% if categories %}
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}" {% if task.category and task.category.id == category.id %}selected{% endif %}>
+                                                {{ category.name }}
+                                            </option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option disabled>No categories available</option>
+                                    {% endif %}
+                                </select>
+                                <small class="form-text text-muted">Organize tasks by category.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Deadline Field -->
+                    <div class="mb-3">
+                        <label for="deadline" class="form-label">Deadline</label>
+                        <input 
+                            type="datetime-local" 
+                            class="form-control" 
+                            id="deadline" 
+                            name="deadline"
+                            value="{% if task.deadline %}{{ task.deadline|date:'Y-m-d\TH:i' }}{% endif %}"
+                        >
+                        <small class="form-text text-muted">Set a deadline for completing this task.</small>
+                    </div>
+
+                    <!-- Task Metadata -->
+                    <div class="alert alert-secondary mb-3">
+                        <small>
+                            <strong>Created:</strong> {{ task.created_at|date:"M d, Y - H:i" }}<br>
+                            <strong>Last Updated:</strong> {{ task.updated_at|date:"M d, Y - H:i" }}
+                        </small>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                            💾 Save Changes
+                        </button>
+                        <a href="/tasks/{{ task.id }}/" class="btn btn-outline-secondary btn-lg">
+                            ← Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="alert alert-danger mt-4">
+            <h5>⚠️ Danger Zone</h5>
+            <p class="mb-2">Want to permanently delete this task?</p>
+            <a href="/tasks/{{ task.id }}/delete/" class="btn btn-danger btn-sm">
+                🗑️ Delete Task Permanently
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

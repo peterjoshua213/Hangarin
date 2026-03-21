@@ -1,0 +1,101 @@
+﻿[
+{
+  "model": "tasks.priority",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-03-15T07:02:49.957Z",
+    "updated_at": "2026-03-15T07:02:49.957Z",
+    "name": "High"
+  }
+},
+{
+  "model": "tasks.priority",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-03-15T07:02:49.967Z",
+    "updated_at": "2026-03-15T07:02:49.967Z",
+    "name": "Medium"
+  }
+},
+{
+  "model": "tasks.priority",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-03-15T07:02:49.975Z",
+    "updated_at": "2026-03-15T07:02:49.975Z",
+    "name": "Low"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 1,
+  "fields": {
+    "created_at": "2026-03-15T07:02:49.983Z",
+    "updated_at": "2026-03-15T07:02:49.983Z",
+    "name": "Work"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 2,
+  "fields": {
+    "created_at": "2026-03-15T07:02:49.990Z",
+    "updated_at": "2026-03-15T07:02:49.990Z",
+    "name": "Personal"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 3,
+  "fields": {
+    "created_at": "2026-03-15T07:02:49.998Z",
+    "updated_at": "2026-03-15T07:02:49.998Z",
+    "name": "Shopping"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 4,
+  "fields": {
+    "created_at": "2026-03-15T07:02:50.006Z",
+    "updated_at": "2026-03-15T07:02:50.006Z",
+    "name": "Health"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 5,
+  "fields": {
+    "created_at": "2026-03-15T07:02:50.014Z",
+    "updated_at": "2026-03-15T07:02:50.014Z",
+    "name": "Learning"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 6,
+  "fields": {
+    "created_at": "2026-03-15T07:02:50.021Z",
+    "updated_at": "2026-03-15T07:02:50.021Z",
+    "name": "Projects"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 7,
+  "fields": {
+    "created_at": "2026-03-15T07:02:50.029Z",
+    "updated_at": "2026-03-15T07:02:50.029Z",
+    "name": "Home"
+  }
+},
+{
+  "model": "tasks.category",
+  "pk": 8,
+  "fields": {
+    "created_at": "2026-03-15T07:02:50.036Z",
+    "updated_at": "2026-03-15T07:02:50.036Z",
+    "name": "Finance"
+  }
+}
+]

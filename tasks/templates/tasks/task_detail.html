@@ -1,0 +1,132 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}{{ task.title }} - Hangarin{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb" style="background: transparent;">
+        <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="/tasks/">Tasks</a></li>
+        <li class="breadcrumb-item active" style="color: white;">{{ task.title }}</li>
+    </ol>
+</nav>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">{{ task.title }}</h2>
+        <div>
+            <a href="/tasks/{{ task.id }}/edit/" class="btn btn-warning btn-sm">✏️ Edit</a>
+            <a href="/tasks/{{ task.id }}/delete/" class="btn btn-danger btn-sm">🗑️ Delete</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Status Badge -->
+        <div class="mb-4">
+            {% if task.status == 'Pending' %}
+                <span class="badge badge-pending" style="font-size: 1rem;">{{ task.status }}</span>
+            {% elif task.status == 'In Progress' %}
+                <span class="badge badge-in-progress" style="font-size: 1rem;">{{ task.status }}</span>
+            {% else %}
+                <span class="badge badge-completed" style="font-size: 1rem;">{{ task.status }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Description -->
+        <div class="mb-4">
+            <h5>📝 Description</h5>
+            {% if task.description %}
+                <p>{{ task.description }}</p>
+            {% else %}
+                <p class="text-muted"><em>No description provided</em></p>
+            {% endif %}
+        </div>
+
+        <!-- Task Details -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5>ℹ️ Details</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Status:</strong></td>
+                        <td>
+                            {% if task.status == 'Pending' %}
+                                <span class="badge badge-pending">{{ task.status }}</span>
+                            {% elif task.status == 'In Progress' %}
+                                <span class="badge badge-in-progress">{{ task.status }}</span>
+                            {% else %}
+                                <span class="badge badge-completed">{{ task.status }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Priority:</strong></td>
+                        <td>
+                            {% if task.priority %}
+                                {% if task.priority.name == 'High' %}
+                                    <span class="badge badge-high">{{ task.priority.name }}</span>
+                                {% elif task.priority.name == 'Medium' %}
+                                    <span class="badge badge-medium">{{ task.priority.name }}</span>
+                                {% else %}
+                                    <span class="badge badge-low">{{ task.priority.name }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Category:</strong></td>
+                        <td>
+                            {% if task.category %}
+                                <span class="badge bg-info">{{ task.category.name }}</span>
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5>📅 Dates</h5>
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Created:</strong></td>
+                        <td>{{ task.created_at|date:"M d, Y - H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Last Updated:</strong></td>
+                        <td>{{ task.updated_at|date:"M d, Y - H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Deadline:</strong></td>
+                        <td>
+                            {% if task.deadline %}
+                                {{ task.deadline|date:"M d, Y - H:i" }}
+                            {% else %}
+                                <span class="text-muted">No deadline</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2">
+            <a href="/tasks/{{ task.id }}/edit/" class="btn btn-primary">
+                ✏️ Edit Task
+            </a>
+            <a href="/tasks/" class="btn btn-secondary">
+                ← Back to Tasks
+            </a>
+            <a href="/" class="btn btn-outline-secondary">
+                📊 Go to Dashboard
+            </a>
+            <a href="/tasks/{{ task.id }}/delete/" class="btn btn-outline-danger">
+                🗑️ Delete Task
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
