@@ -1,0 +1,208 @@
+{% extends 'tasks/base.html' %}
+
+{% block title %}Manage Categories - Hangarin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">📁 Manage Categories</h2>
+            </div>
+            <div class="card-body">
+                <form id="addCategoryForm" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-9">
+                            <input type="text" id="categoryName" name="name" class="form-control" 
+                                   placeholder="Enter category name (e.g., Work, Personal, Shopping)" required>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-lg"></i> Add Category
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="categoryMessage"></div>
+
+                {% if categories %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Category Name</th>
+                                    <th>Created</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="categoryList">
+                                {% for category in categories %}
+                                    <tr id="category-{{ category.id }}">
+                                        <td>
+                                            <span class="category-name-{{ category.id }}">{{ category.name }}</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">{{ category.created_at|date:"M d, Y" }}</small>
+                                        </td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-warning edit-category-btn" 
+                                                    data-id="{{ category.id }}" data-name="{{ category.name }}">
+                                                ✏️ Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-danger delete-category-btn" 
+                                                    data-id="{{ category.id }}">
+                                                🗑️ Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        📌 No categories yet. Create one to get started!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="editCategoryId">
+                    <div class="mb-3">
+                        <label for="editCategoryName" class="form-label">Category Name</label>
+                        <input type="text" id="editCategoryName" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+// Add Category
+document.getElementById('addCategoryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('categoryName').value;
+    const messageDiv = document.getElementById('categoryMessage');
+    
+    try {
+        const response = await fetch('{% url "create-category" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `name=${encodeURIComponent(name)}`
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            messageDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show">✅ Category created successfully!</div>';
+            document.getElementById('categoryName').value = '';
+            
+            // Add new row to table
+            const table = document.getElementById('categoryList');
+            const row = document.createElement('tr');
+            row.id = `category-${data.id}`;
+            row.innerHTML = `
+                <td><span class="category-name-${data.id}">${data.name}</span></td>
+                <td><small class="text-muted">Just now</small></td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-warning edit-category-btn" data-id="${data.id}" data-name="${data.name}">✏️ Edit</button>
+                    <button class="btn btn-sm btn-danger delete-category-btn" data-id="${data.id}">🗑️ Delete</button>
+                </td>
+            `;
+            table.appendChild(row);
+            
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        }
+    } catch (error) {
+        messageDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+});
+
+// Edit Category
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.edit-category-btn')) {
+        const id = e.target.closest('.edit-category-btn').dataset.id;
+        const name = e.target.closest('.edit-category-btn').dataset.name;
+        document.getElementById('editCategoryId').value = id;
+        document.getElementById('editCategoryName').value = name;
+        new bootstrap.Modal(document.getElementById('editModal')).show();
+    }
+});
+
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editCategoryId').value;
+    const name = document.getElementById('editCategoryName').value;
+    const messageDiv = document.getElementById('categoryMessage');
+    
+    try {
+        const response = await fetch(`/categories/${id}/edit/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `name=${encodeURIComponent(name)}`
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            messageDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show">✅ Category updated successfully!</div>';
+            document.querySelector(`.category-name-${id}`).textContent = name;
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            setTimeout(() => location.reload(), 1500);
+        }
+    } catch (error) {
+        messageDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+});
+
+// Delete Category
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.delete-category-btn')) {
+        const id = e.target.closest('.delete-category-btn').dataset.id;
+        if (confirm('Are you sure you want to delete this category?')) {
+            fetch(`/categories/${id}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                }
+            }).then(response => {
+                if (response.ok) {
+                    document.getElementById(`category-${id}`).remove();
+                    location.reload();
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -150,6 +150,9 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
+# Email Configuration (Development)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 # Allauth Configuration
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'optional'

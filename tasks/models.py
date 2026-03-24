@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -9,21 +10,25 @@ class BaseModel(models.Model):
         abstract = True
 
 class Priority(BaseModel):
-    name = models.CharField(max_length=50, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='priorities')
+    name = models.CharField(max_length=50)
     
     class Meta:
         verbose_name = "Priority"
         verbose_name_plural = "Priorities"
+        unique_together = ['user', 'name']
     
     def __str__(self):
         return self.name
 
 class Category(BaseModel):
-    name = models.CharField(max_length=100, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='categories')
+    name = models.CharField(max_length=100)
     
     class Meta:
         verbose_name = "Category"
         verbose_name_plural = "Categories"
+        unique_together = ['user', 'name']
     
     def __str__(self):
         return self.name
@@ -35,12 +40,13 @@ class Task(BaseModel):
         ('Completed', 'Completed'),
     ]
     
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
     deadline = models.DateTimeField(null=True, blank=True)
-    priority = models.ForeignKey(Priority, on_delete=models.SET_NULL, null=True, related_name='tasks')
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='tasks')
+    priority = models.ForeignKey(Priority, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     
     def __str__(self):
         return self.title

@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from .models import Task, Priority, Category
+from .models import Task, Priority, Category, SubTask, Note
 
 # Task List View
 @login_required
@@ -12,7 +12,7 @@ def task_list(request):
     Display all tasks with optional filtering by status, priority, or category.
     GET parameters: status, priority_id, category_id
     """
-    tasks = Task.objects.all()
+    tasks = Task.objects.filter(user=request.user)
     
     # Filter by status if provided
     status = request.GET.get('status')
@@ -31,8 +31,8 @@ def task_list(request):
     
     context = {
         'tasks': tasks,
-        'priorities': Priority.objects.all().order_by('name'),
-        'categories': Category.objects.all().order_by('name'),
+        'priorities': Priority.objects.filter(user=request.user).order_by('name'),
+        'categories': Category.objects.filter(user=request.user).order_by('name'),
     }
     return render(request, 'tasks/task_list.html', context)
 
@@ -44,8 +44,12 @@ def task_detail(request, task_id):
     """
     Display details of a specific task.
     """
-    task = get_object_or_404(Task, pk=task_id)
-    context = {'task': task}
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    context = {
+        'task': task,
+        'subtasks': task.subtasks.all(),
+        'notes': task.notes.all(),
+    }
     return render(request, 'tasks/task_detail.html', context)
 
 
@@ -70,12 +74,13 @@ def create_task(request):
         if not title:
             return render(request, 'tasks/create_task.html', {
                 'error': 'Task title is required',
-                'priorities': Priority.objects.all(),
-                'categories': Category.objects.all(),
+                'priorities': Priority.objects.filter(user=request.user),
+                'categories': Category.objects.filter(user=request.user),
             })
         
         # Create the task
         task = Task.objects.create(
+            user=request.user,
             title=title,
             description=description,
             status=status,
@@ -87,8 +92,8 @@ def create_task(request):
         return redirect('task-detail', task_id=task.id)
     
     context = {
-        'priorities': Priority.objects.all().order_by('name'),
-        'categories': Category.objects.all().order_by('name'),
+        'priorities': Priority.objects.filter(user=request.user).order_by('name'),
+        'categories': Category.objects.filter(user=request.user).order_by('name'),
     }
     return render(request, 'tasks/create_task.html', context)
 
@@ -102,7 +107,7 @@ def update_task(request, task_id):
     GET: Display form with current data
     POST: Save changes
     """
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
     
     if request.method == 'POST':
         task.title = request.POST.get('title', task.title)
@@ -123,8 +128,8 @@ def update_task(request, task_id):
     
     context = {
         'task': task,
-        'priorities': Priority.objects.all().order_by('name'),
-        'categories': Category.objects.all().order_by('name'),
+        'priorities': Priority.objects.filter(user=request.user).order_by('name'),
+        'categories': Category.objects.filter(user=request.user).order_by('name'),
     }
     return render(request, 'tasks/update_task.html', context)
 
@@ -138,7 +143,7 @@ def delete_task(request, task_id):
     GET: Display confirmation page
     POST: Delete the task
     """
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
     
     if request.method == 'POST':
         task.delete()
@@ -156,7 +161,7 @@ def task_list_api(request):
     API endpoint to get all tasks as JSON.
     Optional filters: status, priority_id, category_id
     """
-    tasks = Task.objects.all()
+    tasks = Task.objects.filter(user=request.user)
     
     # Apply filters
     status = request.GET.get('status')
@@ -195,7 +200,7 @@ def task_detail_api(request, task_id):
     """
     API endpoint to get a specific task as JSON.
     """
-    task = get_object_or_404(Task, pk=task_id)
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
     
     task_data = {
         'id': task.id,
@@ -218,17 +223,151 @@ def dashboard(request):
     """
     Dashboard view showing task statistics and summary.
     """
-    total_tasks = Task.objects.count()
-    pending_tasks = Task.objects.filter(status='Pending').count()
-    in_progress_tasks = Task.objects.filter(status='In Progress').count()
-    completed_tasks = Task.objects.filter(status='Completed').count()
+    user_tasks = Task.objects.filter(user=request.user)
+    total_tasks = user_tasks.count()
+    pending_tasks = user_tasks.filter(status='Pending').count()
+    in_progress_tasks = user_tasks.filter(status='In Progress').count()
+    completed_tasks = user_tasks.filter(status='Completed').count()
     
     context = {
         'total_tasks': total_tasks,
         'pending_tasks': pending_tasks,
         'in_progress_tasks': in_progress_tasks,
         'completed_tasks': completed_tasks,
-        'recent_tasks': Task.objects.all()[:5],
+        'recent_tasks': user_tasks[:5],
     }
     
     return render(request, 'tasks/dashboard.html', context)
+
+
+# SubTask Views
+@login_required
+@require_http_methods(["POST"])
+def create_subtask(request, task_id):
+    """
+    Create a new subtask for a task.
+    POST: Save new subtask
+    """
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    
+    title = request.POST.get('title')
+    if not title:
+        return JsonResponse({'error': 'Subtask title is required'}, status=400)
+    
+    subtask = SubTask.objects.create(
+        task=task,
+        title=title,
+    )
+    
+    return JsonResponse({
+        'id': subtask.id,
+        'title': subtask.title,
+        'status': subtask.status,
+        'created_at': subtask.created_at.isoformat(),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_subtask(request, task_id, subtask_id):
+    """
+    Update a subtask.
+    POST: Save changes
+    """
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    subtask = get_object_or_404(SubTask, pk=subtask_id, task=task)
+    
+    title = request.POST.get('title')
+    if title:
+        subtask.title = title
+    
+    status = request.POST.get('status')
+    if status:
+        subtask.status = status
+    
+    subtask.save()
+    
+    return JsonResponse({
+        'id': subtask.id,
+        'title': subtask.title,
+        'status': subtask.status,
+        'updated_at': subtask.updated_at.isoformat(),
+    })
+
+
+@login_required
+@require_http_methods(["POST", "DELETE"])
+def delete_subtask(request, task_id, subtask_id):
+    """
+    Delete a subtask.
+    POST/DELETE: Delete the subtask
+    """
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    subtask = get_object_or_404(SubTask, pk=subtask_id, task=task)
+    
+    subtask.delete()
+    
+    return JsonResponse({'message': 'Subtask deleted successfully'})
+
+
+# Note Views
+@login_required
+@require_http_methods(["POST"])
+def create_note(request, task_id):
+    """
+    Create a note for a task.
+    POST: Save new note
+    """
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    
+    content = request.POST.get('content')
+    if not content:
+        return JsonResponse({'error': 'Note content is required'}, status=400)
+    
+    note = Note.objects.create(
+        task=task,
+        content=content,
+    )
+    
+    return JsonResponse({
+        'id': note.id,
+        'content': note.content,
+        'created_at': note.created_at.isoformat(),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def update_note(request, task_id, note_id):
+    """
+    Update a note.
+    POST: Save changes
+    """
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    note = get_object_or_404(Note, pk=note_id, task=task)
+    
+    content = request.POST.get('content')
+    if content:
+        note.content = content
+        note.save()
+    
+    return JsonResponse({
+        'id': note.id,
+        'content': note.content,
+        'updated_at': note.updated_at.isoformat(),
+    })
+
+
+@login_required
+@require_http_methods(["POST", "DELETE"])
+def delete_note(request, task_id, note_id):
+    """
+    Delete a note.
+    POST/DELETE: Delete the note
+    """
+    task = get_object_or_404(Task, pk=task_id, user=request.user)
+    note = get_object_or_404(Note, pk=note_id, task=task)
+    
+    note.delete()
+    
+    return JsonResponse({'message': 'Note deleted successfully'})

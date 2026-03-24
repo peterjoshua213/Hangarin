@@ -3,20 +3,30 @@ from .models import Priority, Category, Task, SubTask, Note
 
 @admin.register(Priority)
 class PriorityAdmin(admin.ModelAdmin):
-    list_display = ['name']
+    list_display = ['name', 'user']
+    list_filter = ['user']
     search_fields = ['name']
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name']
+    list_display = ['name', 'user']
+    list_filter = ['user']
     search_fields = ['name']
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ['title', 'status', 'deadline', 'priority', 'category']
-    list_filter = ['status', 'priority', 'category']
+    list_display = ['title', 'user', 'status', 'deadline', 'priority', 'category']
+    list_filter = ['user', 'status', 'priority', 'category']
     search_fields = ['title', 'description']
     date_hierarchy = 'deadline'
+
+class SubTaskInline(admin.TabularInline):
+    model = SubTask
+    extra = 1
+
+class NoteInline(admin.TabularInline):
+    model = Note
+    extra = 1
 
 @admin.register(SubTask)
 class SubTaskAdmin(admin.ModelAdmin):
