@@ -112,7 +112,7 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2 mb-4">
             <a href="/tasks/{{ task.id }}/edit/" class="btn btn-primary">
                 ✏️ Edit Task
             </a>
@@ -128,5 +128,379 @@
         </div>
     </div>
 </div>
+
+<!-- Subtasks Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="mb-0">✅ Subtasks</h3>
+    </div>
+    <div class="card-body">
+        {% if subtasks %}
+            <!-- Progress Bar -->
+            <div class="mb-4">
+                {% with completed=subtasks|dictsort:"status"|slice:"-1"|first %}
+                    {% with total=subtasks|length %}
+                        {% with completed_count=subtasks|dictsort:"status"|slice:"-1"|first|length %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>Progress</span>
+                                <span id="subtaskProgress">{{ completed_count }}/{{ total }} completed</span>
+                            </div>
+                            <div class="progress mb-4" style="height: 25px;">
+                                <div class="progress-bar bg-success" role="progressbar" id="subtaskProgressBar" 
+                                     style="width: {% widthratio completed_count total 100 %}%" 
+                                     aria-valuenow="{% widthratio completed_count total 100 %}" 
+                                     aria-valuemin="0" aria-valuemax="100">
+                                    {% widthratio completed_count total 100 %}%
+                                </div>
+                            </div>
+                        {% endwith %}
+                    {% endwith %}
+                {% endwith %}
+            </div>
+
+            <!-- Subtasks List -->
+            <div id="subtaskList" class="mb-4">
+                {% for subtask in subtasks %}
+                    <div class="subtask-item d-flex align-items-center gap-3 p-3 border rounded mb-2">
+                        <input type="checkbox" class="subtask-checkbox" data-id="{{ subtask.id }}" 
+                               {% if subtask.status == 'Completed' %}checked{% endif %}>
+                        <span class="subtask-title-{{ subtask.id }} flex-grow-1">
+                            {{ subtask.title }}
+                            <small class="ms-2 text-muted">
+                                {% if subtask.status == 'Pending' %}
+                                    <span class="badge badge-pending">{{ subtask.status }}</span>
+                                {% elif subtask.status == 'In Progress' %}
+                                    <span class="badge badge-in-progress">{{ subtask.status }}</span>
+                                {% else %}
+                                    <span class="badge badge-completed">{{ subtask.status }}</span>
+                                {% endif %}
+                            </small>
+                        </span>
+                        <button class="btn btn-sm btn-warning edit-subtask-btn" data-id="{{ subtask.id }}" data-title="{{ subtask.title }}">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-subtask-btn" data-id="{{ subtask.id }}">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted text-center py-4">📌 No subtasks yet. Create one to break down your task!</p>
+        {% endif %}
+
+        <!-- Add Subtask Form -->
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">➕ Add New Subtask</h5>
+                <form id="addSubtaskForm" class="row g-2">
+                    {% csrf_token %}
+                    <div class="col-md-9">
+                        <input type="text" id="subtaskTitle" class="form-control" 
+                               placeholder="Enter subtask (e.g., Prepare presentation)" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">
+                            ➕ Add Subtask
+                        </button>
+                    </div>
+                </form>
+                <div id="subtaskMessage"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes Section -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="mb-0">📝 Notes</h3>
+    </div>
+    <div class="card-body">
+        {% if notes %}
+            <div id="notesList" class="mb-4">
+                {% for note in notes %}
+                    <div class="note-item p-3 border rounded mb-3" id="note-{{ note.id }}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <p class="note-content-{{ note.id }} mb-2">{{ note.content }}</p>
+                                <small class="text-muted">
+                                    Added: {{ note.created_at|date:"M d, Y - H:i" }}
+                                    {% if note.created_at != note.updated_at %}
+                                        | Last edited: {{ note.updated_at|date:"M d, Y - H:i" }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="ms-2">
+                                <button class="btn btn-sm btn-warning edit-note-btn" data-id="{{ note.id }}" data-content="{{ note.content|escapejs }}">
+                                    ✏️ Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-note-btn" data-id="{{ note.id }}">
+                                    🗑️ Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted text-center py-4">📌 No notes yet. Add one to keep track of important info!</p>
+        {% endif %}
+
+        <!-- Add Note Form -->
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="card-title">➕ Add New Note</h5>
+                <form id="addNoteForm" class="mb-2">
+                    {% csrf_token %}
+                    <textarea id="noteContent" class="form-control mb-2" rows="3" 
+                              placeholder="Write your note here..." required></textarea>
+                    <button type="submit" class="btn btn-success">
+                        ➕ Add Note
+                    </button>
+                </form>
+                <div id="noteMessage"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Subtask Modal -->
+<div class="modal fade" id="editSubtaskModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Subtask</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editSubtaskForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="editSubtaskId">
+                    <div class="mb-3">
+                        <label for="editSubtaskTitle" class="form-label">Subtask Title</label>
+                        <input type="text" id="editSubtaskTitle" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Note Modal -->
+<div class="modal fade" id="editNoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editNoteForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="editNoteId">
+                    <div class="mb-3">
+                        <label for="editNoteContent" class="form-label">Note Content</label>
+                        <textarea id="editNoteContent" class="form-control" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+const taskId = {{ task.id }};
+
+// Add Subtask
+document.getElementById('addSubtaskForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = document.getElementById('subtaskTitle').value;
+    const messageDiv = document.getElementById('subtaskMessage');
+    
+    try {
+        const response = await fetch(`/tasks/${taskId}/subtasks/create/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `title=${encodeURIComponent(title)}`
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            messageDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show">✅ Subtask created!</div>';
+            document.getElementById('subtaskTitle').value = '';
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        }
+    } catch (error) {
+        messageDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+});
+
+// Subtask Checkbox - Mark as Complete
+document.querySelectorAll('.subtask-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', async (e) => {
+        const subtaskId = e.target.dataset.id;
+        const status = e.target.checked ? 'Completed' : 'Pending';
+        
+        try {
+            const response = await fetch(`/tasks/${taskId}/subtasks/${subtaskId}/edit/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken,
+                },
+                body: `status=${encodeURIComponent(status)}`
+            });
+            
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error updating subtask:', error);
+        }
+    });
+});
+
+// Edit Subtask
+document.querySelectorAll('.edit-subtask-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const title = btn.dataset.title;
+        document.getElementById('editSubtaskId').value = id;
+        document.getElementById('editSubtaskTitle').value = title;
+        new bootstrap.Modal(document.getElementById('editSubtaskModal')).show();
+    });
+});
+
+document.getElementById('editSubtaskForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editSubtaskId').value;
+    const title = document.getElementById('editSubtaskTitle').value;
+    
+    try {
+        const response = await fetch(`/tasks/${taskId}/subtasks/${id}/edit/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `title=${encodeURIComponent(title)}`
+        });
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('editSubtaskModal')).hide();
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+
+// Delete Subtask
+document.querySelectorAll('.delete-subtask-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (confirm('Delete this subtask?')) {
+            fetch(`/tasks/${taskId}/subtasks/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            }).then(() => location.reload());
+        }
+    });
+});
+
+// Add Note
+document.getElementById('addNoteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const content = document.getElementById('noteContent').value;
+    const messageDiv = document.getElementById('noteMessage');
+    
+    try {
+        const response = await fetch(`/tasks/${taskId}/notes/create/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `content=${encodeURIComponent(content)}`
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            messageDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show">✅ Note created!</div>';
+            document.getElementById('noteContent').value = '';
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            messageDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        }
+    } catch (error) {
+        messageDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+});
+
+// Edit Note
+document.querySelectorAll('.edit-note-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const content = btn.dataset.content;
+        document.getElementById('editNoteId').value = id;
+        document.getElementById('editNoteContent').value = content;
+        new bootstrap.Modal(document.getElementById('editNoteModal')).show();
+    });
+});
+
+document.getElementById('editNoteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editNoteId').value;
+    const content = document.getElementById('editNoteContent').value;
+    
+    try {
+        const response = await fetch(`/tasks/${taskId}/notes/${id}/edit/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: `content=${encodeURIComponent(content)}`
+        });
+        
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('editNoteModal')).hide();
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+
+// Delete Note
+document.querySelectorAll('.delete-note-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        if (confirm('Delete this note?')) {
+            fetch(`/tasks/${taskId}/notes/${id}/delete/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken }
+            }).then(() => location.reload());
+        }
+    });
+});
+</script>
 
 {% endblock %}
