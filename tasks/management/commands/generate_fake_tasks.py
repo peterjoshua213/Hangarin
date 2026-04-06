@@ -29,23 +29,31 @@ class Command(BaseCommand):
         count = options['count']
         username = options['username']
         
+        # Create user if doesn't exist
         try:
             user = User.objects.get(username=username)
+            self.stdout.write(f'Using existing user: {username}')
         except User.DoesNotExist:
-            self.stdout.write(self.style.ERROR(f'User "{username}" does not exist'))
-            return
+            self.stdout.write(f'Creating new user: {username}')
+            user = User.objects.create_user(username=username, password='Password123!')
         
-        # Get user's priorities and categories
+        # Create default priorities if they don't exist
         priorities = list(Priority.objects.filter(user=user))
-        categories = list(Category.objects.filter(user=user))
-        
         if not priorities:
-            self.stdout.write(self.style.ERROR('No priorities found for this user'))
-            return
+            self.stdout.write('Creating default priorities...')
+            default_priorities = ['High', 'Medium', 'Low']
+            for priority_name in default_priorities:
+                Priority.objects.get_or_create(user=user, name=priority_name)
+            priorities = list(Priority.objects.filter(user=user))
         
+        # Create default categories if they don't exist
+        categories = list(Category.objects.filter(user=user))
         if not categories:
-            self.stdout.write(self.style.ERROR('No categories found for this user'))
-            return
+            self.stdout.write('Creating default categories...')
+            default_categories = ['Work', 'Personal', 'Shopping', 'Health', 'Other']
+            for category_name in default_categories:
+                Category.objects.get_or_create(user=user, name=category_name)
+            categories = list(Category.objects.filter(user=user))
         
         status_choices = ['Pending', 'In Progress', 'Completed']
         
